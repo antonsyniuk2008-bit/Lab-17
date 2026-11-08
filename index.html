@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechShop</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('techshop_theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark-theme');
+            }
+        })();
+    </script>
+</head>
+<body>
+
+    <header>
+        <h1>TechShop</h1>
+        <p>Інтернет-магазин техніки</p>
+        <div class="header-controls" style="display: flex; gap: 12px; align-items: center; justify-content: center; margin-top: 10px;">
+            <button id="themeToggleBtn" class="btn btn-theme">
+                <span class="theme-icon">🌙</span>
+                <span class="theme-text">Темна тема</span>
+            </button>
+            <button class="cart btn-cart">
+                🛒 Кошик: <span class="cart-counter">0</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <div class="favorites-zone" id="favoritesZone">
+            <p class="empty-fav">Перетягніть сюди товари в Улюблене</p>
+        </div>
+
+        <!-- Панель керування каталогом (ЛР №17: заміна старого .search-bar + додаткові фільтри) -->
+        <section class="catalog-toolbar" aria-label="Фільтри каталогу">
+            <input
+                type="search"
+                id="searchInput"
+                class="toolbar-control"
+                placeholder="Пошук за назвою товару..."
+                maxlength="50"
+                autocomplete="off"
+            >
+
+            <select id="categorySelect" class="toolbar-control" aria-label="Категорія">
+                <option value="all">Усі категорії</option>
+                <!-- Категорії додаються динамічно з JS -->
+            </select>
+
+            <select id="sortSelect" class="toolbar-control" aria-label="Сортування">
+                <option value="default">За замовчуванням</option>
+                <option value="price_asc">Ціна: від дешевих до дорогих</option>
+                <option value="price_desc">Ціна: від дорогих до дешевих</option>
+                <option value="title_asc">Назва: А → Я</option>
+                <option value="rating_desc">Рейтинг: найкращі спочатку</option>
+            </select>
+
+            <!-- Додаткове завдання: Кількість товарів на сторінці -->
+            <select id="perPageSelect" class="toolbar-control" aria-label="Товарів на сторінці">
+                <option value="4">4 на сторінці</option>
+                <option value="6" selected>6 на сторінці</option>
+                <option value="8">8 на сторінці</option>
+                <option value="12">12 на сторінці</option>
+            </select>
+
+            <!-- Додаткове завдання: Фільтр за діапазоном ціни -->
+            <div class="price-filter-group">
+                <input
+                    type="number"
+                    id="minPriceInput"
+                    class="toolbar-control price-input"
+                    placeholder="Мін. $"
+                    min="0"
+                >
+                <span>—</span>
+                <input
+                    type="number"
+                    id="maxPriceInput"
+                    class="toolbar-control price-input"
+                    placeholder="Макс. $"
+                    min="0"
+                >
+            </div>
+
+            <button type="button" id="resetFiltersBtn" class="btn btn-secondary">Скинути</button>
+            <button type="button" id="shareLinkBtn" class="btn btn-secondary">🔗 Поділитися</button>
+        </section>
+
+        <!-- Інформаційний рядок: "Показано 1–6 з 20 товарів" -->
+        <p id="catalogInfo" class="catalog-info" aria-live="polite"></p>
+
+        <h2>Наші товари</h2>
+        
+        <!-- Сітка товарів -->
+        <div class="products-grid"></div>
+
+        <!-- Посторінкова навігація -->
+        <nav id="pagination" class="pagination" aria-label="Сторінки каталогу"></nav>
+    </main>
+
+    <footer>
+        <p>© 2026 TechShop</p>
+    </footer>
+
+    <div class="modal-overlay hidden" id="cartOverlay">
+        <div class="modal-window">
+            <div class="modal-header">
+                <h2>Ваш Кошик</h2>
+                <button class="close-btn" id="closeCartBtn">&times;</button>
+            </div>
+            <div class="cart-items" id="cartItemsContainer">
+                <p>Кошик порожній.</p>
+            </div>
+            <div class="modal-footer" style="display: block;">
+                <h3 style="margin-bottom: 15px;">Разом: $<span id="cartTotalSum">0</span></h3>
+                <form id="checkoutOrderForm" novalidate style="text-align: left; border-top: 1px solid #eee; padding-top: 15px;">
+                    <div class="form-row" style="margin-bottom: 12px;">
+                        <label for="clientName" style="display: block; margin-bottom: 4px; font-weight: bold;">ПІБ покупця:</label>
+                        <input type="text" id="clientName" name="clientName" required style="width: 100%; padding: 8px; border-radius: 4px;">
+                        <span class="input-error" id="nameError" style="color: red; font-size: 13px;"></span>
+                    </div>
+                    <div class="form-row" style="margin-bottom: 12px;">
+                        <label for="clientPhone" style="display: block; margin-bottom: 4px; font-weight: bold;">Номер телефону:</label>
+                        <input type="tel" id="clientPhone" name="clientPhone" required style="width: 100%; padding: 8px; border-radius: 4px;">
+                        <span class="input-error" id="phoneError" style="color: red; font-size: 13px;"></span>
+                    </div>
+                    <div class="form-row" style="margin-bottom: 12px;">
+                        <label for="clientEmail" style="display: block; margin-bottom: 4px; font-weight: bold;">Email:</label>
+                        <input type="email" id="clientEmail" name="clientEmail" required style="width: 100%; padding: 8px; border-radius: 4px;">
+                        <span class="input-error" id="emailError" style="color: red; font-size: 13px;"></span>
+                    </div>
+                    <button type="submit" id="btnPlaceOrder" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                        Підтвердити замовлення
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/scripts/main.js" defer></script>
+</body>
+</html>
